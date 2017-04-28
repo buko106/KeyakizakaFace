@@ -1,0 +1,3 @@
+[submodule "googliser"]
+	path = googliser
+	url = git@github.com:teracow/googliser.git
