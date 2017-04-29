@@ -132,5 +132,5 @@ for file in findAllImage(sourcedir):
     print file
     # イメージファイルの読み込み
     img = cv2.imread(file)
-
+    if None == img : continue
     detectFaceWithRotation(cv2.imread(file),face_cascade,eye_cascade,size=200,faceSize=200,isBGR=True)
