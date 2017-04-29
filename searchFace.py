@@ -4,7 +4,7 @@ import os
 import time
 import numpy
 import math
-
+import argparse
 
 def checkImage( img , winName="No Name" , pos=(0,0) , wait=0 ):
     cv2.imshow(winName,img)
@@ -106,18 +106,31 @@ def detectFaceWithRotation(img,cascade_f,cascade_e,size=None,faceSize=None,isBGR
         # checkImage(rotated,file+"deg="+str(deg)+")", wait=300)
 
 
+def findAllImage(src):
+    for root , dir , files in os.walk(src):
+        for file in files:
+            yield os.path.join(root,file)
+
+
+desc="Detect faces from all image files under SRC"
+
+parser = argparse.ArgumentParser(description=desc)
+parser.add_argument("src",help="source directory")
+parser.add_argument("dst",help="destination directory")
+args = parser.parse_args()
+
 # Import haar cascades
 face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_alt2.xml')
 eye_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_eye.xml')
 
+
+
 # Image Files Path
-sourcedir = "data/saitoufuyuka/"
-path2file = sourcedir.rstrip("/")
+sourcedir = args.src
 # Get a list of all Images
-files = os.listdir(path2file)
-
-for file in files:
+for file in findAllImage(sourcedir):
+    print file
     # イメージファイルの読み込み
-    img = cv2.imread(path2file+"/"+file)
+    img = cv2.imread(file)
 
-    detectFaceWithRotation(cv2.imread(path2file+"/"+file),face_cascade,eye_cascade,size=200,faceSize=200,isBGR=True)
+    detectFaceWithRotation(cv2.imread(file),face_cascade,eye_cascade,size=200,faceSize=200,isBGR=True)
