@@ -5,72 +5,119 @@ import time
 import numpy
 import math
 
-def check(img,cascade_f):
-    r , c , _ = img.shape
-    ratio = 200. / max(r,c)
+
+def checkImage( img , winName="No Name" , pos=(0,0) , wait=0 ):
+    cv2.imshow(winName,img)
+    # left, upper
+    x,y=pos
+    cv2.moveWindow(winName,x,y)
+    # Wait for wait msec
+    cv2.waitKey(wait)
+    # Destroy
+    cv2.destroyAllWindows()
+
+def detectEyes(face,cascade_eye,size=None,isBGR=False):
+    
+    r = face.shape[0]
+    c = face.shape[1]
+
+    if size!=None and r>size and c>size :
+        # resized to size*(y<size) or (x<size)*size
+        ratio = float(size) / max(r,c)
+    else:
+        ratio = 1.0
+
+    resized = cv2.resize(face, (int(ratio*c),int(ratio*r))) 
+        
+    if isBGR:
+        # convert to gray
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = resized
+
+    eyes = cascade_eye.detectMultiScale(gray)
+    ret = [ [ int(x/ratio) , int(y/ratio) , int(w/ratio) , int(h/ratio) ] for (x,y,w,h) in eyes ]
+    return ret
+
+def detectFaces(img,cascade_face,size=None,isBGR=False):
+    
+    r = img.shape[0]
+    c = img.shape[1]
+
+    if size!=None and r>size and c>size :
+        # resized to size*(y<size) or (x<size)*size
+        ratio = float(size) / max(r,c)
+    else:
+        ratio = 1.0
+
     resized = cv2.resize(img, (int(ratio*c),int(ratio*r))) 
 
-    #
-    # cv2.imshow("hoge",resized)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    #
+    if isBGR:
+        # convert to gray
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = resized
 
-    rows, cols , color = resized.shape
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    faces = cascade_face.detectMultiScale(gray)
+    ret = [ [ int(x/ratio) , int(y/ratio) , int(w/ratio) , int(h/ratio) ] for (x,y,w,h) in faces ]
+    return ret
+
+
+def detectFaceWithRotation(img,cascade_f,cascade_e,size=None,faceSize=None,isBGR=False):
     
+    r = img.shape[0]
+    c = img.shape[1]
+
+    if size!=None and r>size and c>size :
+        # resized to size*(y<size) or (x<size)*size
+        ratio = float(size) / max(r,c)
+    else:
+        ratio = 1.0
+
+    resized = cv2.resize(img, (int(ratio*c),int(ratio*r))) 
+
+    # convert to gray
+    if isBGR:
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = resized
+
+    rows, cols = gray.shape
     # 元画像の斜辺サイズの枠を作る(0で初期化)
     hypot = int(math.hypot(rows, cols))
+    # cv2 image is type=numpy.ndarray of numpy.uint8
     frame = numpy.zeros((hypot, hypot), numpy.uint8)
-    frame[(hypot - rows) * 0.5:(hypot + rows) * 0.5, (hypot - cols) * 0.5:(hypot + cols) * 0.5] = gray
-    # 各loopで違う角度の回転行列をかけた結果のものに対して検出を試みる
+    frame[ int((hypot - rows) * 0.5): int((hypot + rows) * 0.5) , int((hypot - cols) * 0.5) : int((hypot + cols) * 0.5) ] = gray
+
     for deg in range(-28, 29, 7):
-        M = cv2.getRotationMatrix2D((hypot * 0.5, hypot * 0.5), -deg, 1.0)
+        M = cv2.getRotationMatrix2D((hypot * 0.5, hypot * 0.5), deg, 1.0)
         rotated = cv2.warpAffine(frame, M, (hypot, hypot))
-        faces = cascade_f.detectMultiScale(rotated)
+        # detect face
+        faces = detectFaces(rotated,cascade_f)
+
         for (x, y, w, h) in faces:
-            cv2.rectangle(rotated, (x, y), (x + w, y + h), (0, 0, 0), 2)
-            
-        # 画像表示
-        cv2.imshow(file+"deg="+str(deg)+")",rotated)
-        cv2.moveWindow(file,0,0)
-        
-        # 何かキーを押したら終了
-        cv2.waitKey(100)
-        cv2.destroyAllWindows()
+            face = rotated[y:y+h,x:x+w]
+            eyes = detectEyes(face,cascade_e,faceSize)
+            for ( x , y , w , h ) in eyes:
+                cv2.rectangle(face, (x, y), (x + w, y + h), (0, 0, 0), 2)
+            if eyes :
+                checkImage(face,"Detected eyes",wait=100)
+        # if faces == () : continue
+        # checkImage(rotated,file+"deg="+str(deg)+")", wait=300)
 
 
-# Haar-like特徴分類器の読み込み
-#face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml')
+# Import haar cascades
 face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_alt2.xml')
+eye_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_eye.xml')
 
-sourcedir = "data/watanaberika/"
+# Image Files Path
+sourcedir = "data/saitoufuyuka/"
 path2file = sourcedir.rstrip("/")
+# Get a list of all Images
 files = os.listdir(path2file)
 
 for file in files:
     # イメージファイルの読み込み
     img = cv2.imread(path2file+"/"+file)
-    # グレースケール変換
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # 顔を検知
-    # face = face_cascade.detectMultiScale(gray)
-    face = []
-    for (x,y,w,h) in face:
-        # 検知した顔を矩形で囲む
-        cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-        # 顔画像（グレースケール）
-        roi_gray = gray[y:y+h, x:x+w]
-        # 顔画像（カラースケール）
-        roi_color = img[y:y+h, x:x+w]
-            
-    # 画像表示
-    #cv2.imshow(file,img)
-    cv2.moveWindow(file,0,0)
-    
-    # 何かキーを押したら終了
-    cv2.waitKey(1500)
-    cv2.destroyAllWindows()
 
-    # 回転
-    check(cv2.imread(path2file+"/"+file),face_cascade)
+    detectFaceWithRotation(cv2.imread(path2file+"/"+file),face_cascade,eye_cascade,size=200,faceSize=200,isBGR=True)
