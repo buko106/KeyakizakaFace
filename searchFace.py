@@ -201,5 +201,5 @@ for file in findAllImage(source):
         pass
 
     print "Write to : "+imgPath
-    cv2.imwrite(imgPath,cv2.resize(cutImege(rotated,pos),(50,50)))
-    
+    # cv2.imwrite(imgPath,cv2.resize(cutImege(rotated,pos),(50,50)))
+    cv2.imwrite(imgPath,cutImege(rotated,pos))
