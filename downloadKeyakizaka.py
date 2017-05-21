@@ -10,7 +10,7 @@ def googliser( phrase , destination=None , lower=1000 , number=25 , quiet=False 
     option_quiet = ""
     if  quiet :
         option_quiet="-q"
-    run( "%s -g -p %s -l %d -n %d %s -u %d" % ( googliser , phrase , lower , number , option_quiet , upper ) )
+    run( "%s -g -f 0 -p %s -l %d -n %d %s -u %d" % ( googliser , phrase , lower , number , option_quiet , upper ) )
     if  destination!=None :
         run("mkdir -p "+destination)
         run("mv %s/* %s/" % (phrase,destination) )
@@ -62,4 +62,4 @@ dir = args.dir.rstrip("/")
 run("mkdir -p "+dir)
 
 for name in member:
-    googliser( name[0]+name[1] , destination=dir+"/"+name[2]+name[3] , number=args.number )
+    googliser( name[0]+name[1] , destination=dir+"/"+name[2]+name[3] , number=args.number,googliser=args.googliser )
